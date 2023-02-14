@@ -3,11 +3,40 @@ from tensorflow.keras.applications.mobilenet_v2 import preprocess_input
 from tensorflow.keras.preprocessing.image import img_to_array
 from tensorflow.keras.models import load_model
 from imutils.video import VideoStream
+from playsound import playsound
 import numpy as np
 import imutils
 import time
 import cv2
 import os
+import emoji
+#this is the GUI code
+from tkinter import *
+import tkinter.messagebox
+from PIL import ImageTk,Image  
+window=Tk()
+
+img = ImageTk.PhotoImage(Image.open("familymask.jpg"))  
+
+canvas1 = Canvas(window, width = 400,
+                 height = 400)
+  
+canvas1.pack(fill = "both", expand = True)
+  
+
+canvas1.create_image( 0, 0, image = img, 
+                     anchor = "nw")
+  
+lbl=Label(window, text="Click start video for Covid - 19 Mask detection", fg='red', font=("Roboto", 16))
+lbl.place(x=40, y=50)
+lbl1=Label(window, text="Project done by Akash,Ayanabh,Ayush,Raunak @TIB", fg='red', font=("Helvetica", 8)) 
+lbl1.place(x=20, y=250)
+#   button
+window.geometry("200x100")  
+  
+
+
+# gui ends here
 
 def detect_and_predict_mask(frame, faceNet, maskNet):
 	# grab the dimensions of the frame and then construct a blob
@@ -66,63 +95,83 @@ def detect_and_predict_mask(frame, faceNet, maskNet):
 		# in the above `for` loop
 		faces = np.array(faces, dtype="float32")
 		preds = maskNet.predict(faces, batch_size=32)
-
 	# return a 2-tuple of the face locations and their corresponding
 	# locations
 	return (locs, preds)
+# remove if not useful
 
+
+def call_me():
 # load our serialized face detector model from disk
-prototxtPath = r"face_detector\deploy.prototxt"
-weightsPath = r"face_detector\res10_300x300_ssd_iter_140000.caffemodel"
-faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
+	prototxtPath = r"face_detector\deploy.prototxt"
+	weightsPath = r"face_detector\res10_300x300_ssd_iter_140000.caffemodel"
+	faceNet = cv2.dnn.readNet(prototxtPath, weightsPath)
 
 # load the face mask detector model from disk
-maskNet = load_model("mask_detector.model")
+	maskNet = load_model("mask_detector.model")
 
 # initialize the video stream
-print("[INFO] starting video stream...")
-vs = VideoStream(src=0).start()
+	print("[INFO] starting video stream...")
+	vs = VideoStream(src=0).start()
+	flag=False
 
 # loop over the frames from the video stream
-while True:
+	while True:
 	# grab the frame from the threaded video stream and resize it
 	# to have a maximum width of 400 pixels
-	frame = vs.read()
-	frame = imutils.resize(frame, width=400)
+		frame = vs.read()
+		frame = imutils.resize(frame, width=400)
 
 	# detect faces in the frame and determine if they are wearing a
 	# face mask or not
-	(locs, preds) = detect_and_predict_mask(frame, faceNet, maskNet)
+		(locs, preds) = detect_and_predict_mask(frame, faceNet, maskNet)
 
 	# loop over the detected face locations and their corresponding
 	# locations
-	for (box, pred) in zip(locs, preds):
+		for (box, pred) in zip(locs, preds):
 		# unpack the bounding box and predictions
-		(startX, startY, endX, endY) = box
-		(mask, withoutMask) = pred
+			(startX, startY, endX, endY) = box
+			(mask, withoutMask) = pred
 
 		# determine the class label and color we'll use to draw
 		# the bounding box and text
-		label = "Mask" if mask > withoutMask else "No Mask"
-		color = (0, 255, 0) if label == "Mask" else (0, 0, 255)
+			label = "Mask" if mask > withoutMask else "No Mask"
+			color = (0, 255, 0) if label == "Mask" else (0, 0, 255)
+			label = "{}: {:.2f}%".format(label, max(mask, withoutMask) * 100)
+			if color == (0, 255, 0):
+				 tkinter.messagebox.showinfo("Mask Detected","-------A L L O W E D-------")
+				 flag=False
+			elif(not flag):
+				playsound('fff.mp3')
+				flag=True
+					
 
 		# include the probability in the label
-		label = "{}: {:.2f}%".format(label, max(mask, withoutMask) * 100)
-
+			
 		# display the label and bounding box rectangle on the output
 		# frame
-		cv2.putText(frame, label, (startX, startY - 10),
-			cv2.FONT_HERSHEY_SIMPLEX, 0.45, color, 2)
-		cv2.rectangle(frame, (startX, startY), (endX, endY), color, 2)
+			cv2.putText(frame, label, (startX, startY - 10),
+			cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
+			cv2.rectangle(frame, (startX, startY), (endX, endY), color, 2)
 
 	# show the output frame
-	cv2.imshow("Frame", frame)
-	key = cv2.waitKey(1) & 0xFF
+		cv2.imshow("Frame", frame)
+		key = cv2.waitKey(1) & 0xFF
 
 	# if the `q` key was pressed, break from the loop
-	if key == ord("q"):
-		break
+		if key == ord("q"):
+			break
 
 # do a bit of cleanup
-cv2.destroyAllWindows()
-vs.stop()
+	cv2.destroyAllWindows()
+	vs.stop()
+#button
+b = Button(window,text = "start video",command = call_me)  
+b.place(x=200, y=100) 
+#b.pack()  
+
+
+
+window.title('Face mask Detection')
+window.geometry("500x286+10+10")
+window.mainloop()
